@@ -27,6 +27,7 @@
   function applyBackground(){
     const css=backgrounds[state.bg]||(isHex(state.bg)?customGradient(state.bg):backgrounds.light);
     document.documentElement.style.setProperty('--stage-bg',css);
+    $$('.stage').forEach(el=>{el.style.background=css;});
     $$('[data-bg]').forEach(b=>{const selected=b.dataset.bg===state.bg;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});
     const customLabel=$('.swatch-custom'),customInput=$('#bg-custom');
     const customActive=isHex(state.bg);
