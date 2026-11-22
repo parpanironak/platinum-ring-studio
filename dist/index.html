@@ -16,7 +16,21 @@
   <main>
     <header class="page-header">
       <div><p class="eyebrow">PLATINUM / SAPPHIRE</p><h1>Platinum contour ring</h1><p class="intro">The full set and the small raised join, together.</p></div>
-      <button id="share" class="button primary" type="button">Copy design link</button>
+      <div class="header-actions">
+        <div class="bg-picker" role="group" aria-label="Stage background">
+          <span class="bg-label">Background</span>
+          <button type="button" class="swatch active" data-bg="light" aria-label="Studio light background" aria-pressed="true" title="Studio light" style="--swatch:#eef2f6"></button>
+          <button type="button" class="swatch" data-bg="ivory" aria-label="Warm ivory background" aria-pressed="false" title="Warm ivory" style="--swatch:#efe7db"></button>
+          <button type="button" class="swatch" data-bg="slate" aria-label="Cool slate background" aria-pressed="false" title="Cool slate" style="--swatch:#323b47"></button>
+          <button type="button" class="swatch" data-bg="navy" aria-label="Velvet navy background" aria-pressed="false" title="Velvet navy" style="--swatch:#162238"></button>
+          <button type="button" class="swatch" data-bg="obsidian" aria-label="Obsidian dark background" aria-pressed="false" title="Obsidian dark" style="--swatch:#14161a"></button>
+          <label class="swatch swatch-custom" title="Custom background color">
+            <span class="sr-only">Custom background color</span>
+            <input id="bg-custom" type="color" value="#1e293b" aria-label="Custom background color">
+          </label>
+        </div>
+        <button id="share" class="button primary" type="button">Copy design link</button>
+      </div>
     </header>
     <div id="share-fallback" hidden><label for="share-url">Design link</label><input id="share-url" readonly type="url"></div>
     <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>

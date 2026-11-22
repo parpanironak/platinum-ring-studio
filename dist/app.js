@@ -1,23 +1,50 @@
 (async function(){
   'use strict';
   const $=s=>document.querySelector(s),$$=s=>Array.from(document.querySelectorAll(s));
-  const defaults={gap:.45,profile:'oval',width:1.7,thickness:1.35,end:'right',whole:'angled',detail:'angled',ghost:true,seats:false};
+  const defaults={gap:.45,profile:'oval',width:1.7,thickness:1.35,end:'right',whole:'angled',detail:'angled',ghost:true,seats:false,bg:'light'};
+  const backgrounds={
+    light:'radial-gradient(ellipse at 50% 40%,#fff 0%,#eef2f6 65%,#e3eaf0 100%)',
+    ivory:'radial-gradient(ellipse at 50% 40%,#fdfaf5 0%,#efe7db 68%,#dfd4c3 100%)',
+    slate:'radial-gradient(ellipse at 50% 40%,#4b5665 0%,#2d3540 68%,#1d232b 100%)',
+    navy:'radial-gradient(ellipse at 50% 40%,#24334d 0%,#131c2e 68%,#0b111d 100%)',
+    obsidian:'radial-gradient(ellipse at 50% 40%,#2a2d33 0%,#14161a 68%,#090a0d 100%)'
+  };
+  const isHex=v=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v);
+  function customGradient(hex){
+    const n=parseInt(hex.slice(1),16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+    const mix=(c,t,a)=>Math.round(c+(t-c)*a);
+    const rgb=(rr,gg,bb)=>`rgb(${rr},${gg},${bb})`;
+    return `radial-gradient(ellipse at 50% 40%,${rgb(mix(r,255,.18),mix(g,255,.18),mix(b,255,.18))} 0%,${hex} 68%,${rgb(mix(r,0,.24),mix(g,0,.24),mix(b,0,.24))} 100%)`;
+  }
   const params=new URLSearchParams(location.search);
   const number=(key,fallback,min,max)=>{const raw=params.get(key);if(raw===null)return fallback;const n=Number(raw);return Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback;};
   const choice=(key,allowed,fallback)=>allowed.includes(params.get(key))?params.get(key):fallback;
-  let state={gap:number('g',.45,0,4),width:number('w',1.7,1.3,2.6),thickness:number('t',1.35,1,1.9),profile:choice('p',['oval','soft-square','flat','knife'],'oval'),end:choice('e',['left','right'],'right'),whole:choice('v',['angled','front','top'],'angled'),detail:choice('d',['angled','side','back'],'angled'),ghost:params.get('ghost')!=='0',seats:params.get('seats')==='1'};
+  const rawBg=params.get('bg');
+  const initialBg=rawBg&&(rawBg in backgrounds||isHex(rawBg))?rawBg:'light';
+  let state={gap:number('g',.45,0,4),width:number('w',1.7,1.3,2.6),thickness:number('t',1.35,1,1.9),profile:choice('p',['oval','soft-square','flat','knife'],'oval'),end:choice('e',['left','right'],'right'),whole:choice('v',['angled','front','top'],'angled'),detail:choice('d',['angled','side','back'],'angled'),ghost:params.get('ghost')!=='0',seats:params.get('seats')==='1',bg:initialBg};
   const names={oval:'Oval','soft-square':'Soft square',flat:'Flat with rounded edges',knife:'Knife edge'};
   let views=[],metalGeometry,prepared,frame=0,urlTimer=0;
+  function applyBackground(){
+    const css=backgrounds[state.bg]||(isHex(state.bg)?customGradient(state.bg):backgrounds.light);
+    document.documentElement.style.setProperty('--stage-bg',css);
+    $$('[data-bg]').forEach(b=>{const selected=b.dataset.bg===state.bg;b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});
+    const customLabel=$('.swatch-custom'),customInput=$('#bg-custom');
+    const customActive=isHex(state.bg);
+    customLabel.classList.toggle('active',customActive);
+    if(customActive){customLabel.style.setProperty('--swatch',state.bg);customInput.value=state.bg;}
+    else{customLabel.style.removeProperty('--swatch');}
+  }
   function writeControls(){
     for(const key of ['gap','width','thickness']){$('#'+key).value=state[key];$('#'+key+'-output').textContent=state[key].toFixed(2)+' mm';$('#'+key).setAttribute('aria-valuetext',state[key].toFixed(2)+' millimetres');}
     $('#profile').value=state.profile;$('#end').value=state.end;$('#ghost').checked=state.ghost;$('#seats').checked=state.seats;
     $('#section-path').setAttribute('d',RingGeometry.sectionPath(state.profile,state.width,state.thickness));$('#section-width').textContent=state.width.toFixed(2)+' mm';$('#section-caption').textContent=names[state.profile]+' section';
     $('#section-svg').setAttribute('aria-label',`${names[state.profile]} cross-section, ${state.width.toFixed(2)} millimetres wide and ${state.thickness.toFixed(2)} millimetres thick`);
     for(const type of ['whole','detail'])$$(`[data-${type}]`).forEach(b=>{const selected=b.dataset[type]===state[type];b.classList.toggle('active',selected);b.setAttribute('aria-pressed',String(selected));});
+    applyBackground();
   }
   function designURL(){
     const u=new URL(location.href);u.search='';
-    for(const [key,value] of Object.entries({g:state.gap.toFixed(2),p:state.profile,w:state.width.toFixed(2),t:state.thickness.toFixed(2),e:state.end,v:state.whole,d:state.detail,ghost:state.ghost?'1':'0',seats:state.seats?'1':'0'}))u.searchParams.set(key,value);
+    for(const [key,value] of Object.entries({g:state.gap.toFixed(2),p:state.profile,w:state.width.toFixed(2),t:state.thickness.toFixed(2),e:state.end,v:state.whole,d:state.detail,ghost:state.ghost?'1':'0',seats:state.seats?'1':'0',bg:state.bg}))u.searchParams.set(key,value);
     return u.href;
   }
   function remember(){clearTimeout(urlTimer);urlTimer=setTimeout(()=>history.replaceState(null,'',designURL()),180);}
@@ -27,6 +54,8 @@
   $('#end').addEventListener('change',e=>{state.end=e.target.value;requestUpdate();});
   $('#ghost').addEventListener('change',e=>{state.ghost=e.target.checked;requestUpdate();});
   $('#seats').addEventListener('change',e=>{state.seats=e.target.checked;requestUpdate();});
+  $$('[data-bg]').forEach(b=>b.addEventListener('click',()=>{state.bg=b.dataset.bg;applyBackground();remember();}));
+  $('#bg-custom').addEventListener('input',e=>{state.bg=e.target.value.toLowerCase();applyBackground();remember();});
   for(const type of ['whole','detail'])$$(`[data-${type}]`).forEach(b=>b.addEventListener('click',()=>{state[type]=b.dataset[type];writeControls();remember();views.find(v=>v.type===type)?.fit(true);}));
   $('#reset').addEventListener('click',()=>{state={...defaults};writeControls();updateModel(true);remember();$('#announcement').textContent='Design reset to the original ring spacing and oval band profile.';});
   $('#share').addEventListener('click',async()=>{
